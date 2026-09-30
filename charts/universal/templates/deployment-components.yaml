@@ -3,7 +3,6 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  # Unique deployment name per role (e.g., universal-app-static-server)
   name: {{ include "universal.fullname" $ }}-{{ $compName }}
   labels:
     {{- include "universal.labels" $ | nindent 4 }}
@@ -24,14 +23,10 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      
       containers:
         - name: {{ $compName }}
-          # Uses the exact same container image as your main application
           image: "{{ $.Values.image.repository }}:{{ $.Values.image.tag | default $.Chart.AppVersion }}"
           imagePullPolicy: {{ $.Values.image.pullPolicy | default "IfNotPresent" }}
-          
-          # Overrides execution context with component-specific args
           {{- if $comp.command }}
           command:
             {{- toYaml $comp.command | nindent 12 }}
@@ -40,8 +35,6 @@ spec:
           args:
             {{- toYaml $comp.args | nindent 12 }}
           {{- end }}
-          
-          # Dynamically exposes ports ONLY if the component requests them
           {{- if $comp.ports }}
           ports:
             {{- range $comp.ports }}
@@ -50,8 +43,6 @@ spec:
               protocol: {{ .protocol | default "TCP" }}
             {{- end }}
           {{- end }}
-          
-          # Inherits the exact same ConfigMaps and Secrets as your main app
           {{- if or $.Values.envFrom $.Values.configData $.Values.secretData }}
           envFrom:
             {{- if $.Values.configData }}
@@ -66,19 +57,14 @@ spec:
             {{- toYaml $.Values.envFrom | nindent 12 }}
             {{- end }}
           {{- end }}
-          
           {{- if $.Values.env }}
           env:
             {{- toYaml $.Values.env | nindent 12 }}
           {{- end }}
-          
-          # Inherits your working volume mounts (like config.js)
           {{- if $.Values.volumeMounts }}
           volumeMounts:
             {{- toYaml $.Values.volumeMounts | nindent 12 }}
           {{- end }}
-
-      # Inherits your global volumes configurations
       {{- if $.Values.volumes }}
       volumes:
         {{- tpl (toYaml $.Values.volumes) $ | nindent 8 }}

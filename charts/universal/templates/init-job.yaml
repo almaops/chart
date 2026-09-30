@@ -7,7 +7,7 @@ metadata:
     {{- include "universal.labels" . | nindent 4 }}
   annotations:
     helm.sh/hook: pre-install,pre-upgrade
-    helm.sh/hook-weight: "-5" # Runs after weight -10 ConfigMap/Secret are created
+    helm.sh/hook-weight: "-5"
     helm.sh/hook-delete-policy: hook-succeeded,before-hook-creation
 spec:
   template:
@@ -23,7 +23,6 @@ spec:
         - name: init-script
           image: "{{ .Values.initJob.image.repository | default .Values.image.repository }}:{{ .Values.initJob.image.tag | default .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.initJob.image.pullPolicy | default "IfNotPresent" }}
-          
           {{- if .Values.initJob.command }}
           command:
             {{- toYaml .Values.initJob.command | nindent 12 }}
@@ -32,7 +31,6 @@ spec:
           args:
             {{- toYaml .Values.initJob.args | nindent 12 }}
           {{- end }}
-
           {{- if or .Values.envFrom .Values.configData .Values.secretData }}
           envFrom:
             {{- if .Values.configData }}
@@ -47,19 +45,14 @@ spec:
             {{- toYaml .Values.envFrom | nindent 12 }}
             {{- end }}
           {{- end }}
-          
           {{- if .Values.env }}
           env:
             {{- toYaml .Values.env | nindent 12 }}
           {{- end }}
-
-          # --- ADD THIS: MOUNTS THE VOLUMES INSIDE THE INIT CONTAINER ---
           {{- if .Values.volumeMounts }}
           volumeMounts:
             {{- toYaml .Values.volumeMounts | nindent 12 }}
           {{- end }}
-
-      # --- ADD THIS: MAPS THE CONFIGMAP VOLUME SOURCE TO THE JOB POD ---
       {{- if .Values.volumes }}
       volumes:
         {{- tpl (toYaml .Values.volumes) . | nindent 8 }}

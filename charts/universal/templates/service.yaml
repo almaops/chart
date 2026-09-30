@@ -22,7 +22,7 @@ spec:
 
 ---
 # ==============================================================================
-# DYNAMIC COMPONENT SERVICES (Static Server, Chat API, etc.)
+# DYNAMIC COMPONENT SERVICES
 # ==============================================================================
 {{- range $compName, $comp := .Values.components }}
 {{- if and $comp.enabled $comp.ports }}
@@ -38,7 +38,7 @@ spec:
   type: ClusterIP
   selector:
     {{- include "universal.selectorLabels" $ | nindent 4 }}
-    app.kubernetes.io/component: {{ $compName }} # Routes strictly to the specific sub-deployment pods
+    app.kubernetes.io/component: {{ $compName }}
   ports:
     {{- range $comp.ports }}
     - name: {{ .name }}

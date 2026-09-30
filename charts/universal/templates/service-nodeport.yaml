@@ -19,6 +19,6 @@ spec:
       port: {{ .servicePort | default .containerPort }}
       targetPort: {{ .name }}
       protocol: {{ .protocol | default "TCP" }}
-      nodePort: {{ .nodePort }}  # Hard enforced: Chart installation fails if this port is taken or out of range
+      nodePort: {{ .nodePort }}
     {{- end }}
 {{- end }}
