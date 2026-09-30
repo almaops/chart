@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "universal.fullname" . }}
+  labels:
+    {{- include "universal.labels" . | nindent 4 }}
+  {{- with .Values.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "universal.selectorLabels" . | nindent 4 }}
+  ports:
+    {{- range .Values.ports }}
+    - name: {{ .name }}
+      port: {{ .servicePort | default .containerPort }}
+      targetPort: {{ .name }}
+      protocol: {{ .protocol | default "TCP" }}
+    {{- end }}
+
+---
+# ==============================================================================
+# DYNAMIC COMPONENT SERVICES (Static Server, Chat API, etc.)
+# ==============================================================================
+{{- range $compName, $comp := .Values.components }}
+{{- if and $comp.enabled $comp.ports }}
+apiVersion: v1
+kind: Service
+metadata:
+  # Generates matching names: release-name-static and release-name-chat
+  name: {{ include "universal.fullname" $ }}-{{ $compName }}
+  labels:
+    {{- include "universal.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $compName }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "universal.selectorLabels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $compName }} # Routes strictly to the specific sub-deployment pods
+  ports:
+    {{- range $comp.ports }}
+    - name: {{ .name }}
+      port: {{ .servicePort | default .containerPort }}
+      targetPort: {{ .name }}
+      protocol: {{ .protocol | default "TCP" }}
+    {{- end }}
+---
+{{- end }}
+{{- end }}

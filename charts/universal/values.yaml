@@ -1,0 +1,184 @@
+replicaCount: 1
+
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  repository: my-app-repo/main-app
+  tag: ""
+  pullPolicy: IfNotPresent
+
+  # Custom Entrypoint (Overrides Dockerfile ENTRYPOINT)
+  # Leave empty/null or omit to use the container's default entrypoint
+  # command: 
+  #   - "/bin/sh"
+  #   - "-c"
+  
+  # Custom Execution Arguments (Overrides Dockerfile CMD)
+  # Leave empty/null or omit to use the container's default arguments
+  # args: 
+  #   - "echo 'Starting application layer...' && ./run-app.sh"
+
+# Optional list of image pull secrets for private container registries
+imagePullSecrets: []
+# - name: registry-credentials
+
+# --- SINGLE-INSTANCE INITIALIZATION JOB ---
+# Runs precisely once before any app or worker replica rolls out.
+# Ideal for running migrations, data seeding, and creating default superuser entries.
+initJob:
+  enabled: false
+  image:
+    repository: "" # Inherits global repository if empty
+    tag: ""        # Inherits global tag if empty
+  # command: ["/bin/sh", "-c"]
+  # Multi-step entry point: migrates DB first, then executes the custom setup script
+  # args:
+  #   - |
+  #     python manage.py migrate --noinput && \
+  #     python manage.py setup_default_superuser.py && \
+  #     python manage.py seed_bootstrap_data
+
+initContainers: []
+# - name: db-migration
+#   image: "my-app-repo/migration-tool:latest"
+#   command: ["sh", "-c", "bundle exec rails db:migrate"]
+#   env:
+#     - name: DATABASE_URL
+#       value: "postgres://user:pass@db-host:5432/mydb"
+
+# --- APPLICATION NETWORKING & PORTS ---
+# Core internal application container mappings. 
+# These will be automatically provisioned under a strict internal ClusterIP service.
+ports: []
+#   - name: http
+#     containerPort: 8080
+#     servicePort: 80
+#     protocol: TCP
+#   - name: grpc
+#     containerPort: 50051
+#     servicePort: 50051
+#     protocol: TCP
+#   - name: metrics
+#     containerPort: 9090
+#     servicePort: 9090
+#     protocol: TCP
+
+# Internal Service Annotations
+service:
+  annotations: {}
+
+# --- OPTION B: EXPLICIT EXTERNAL NODE PORTS ---
+# A completely separate external service object will be spun up ONLY for these items.
+# Kubernetes will NOT auto-assign random ports; if the designated nodePort is taken, 
+# the installation will explicitly fail for safety. Omit or leave empty to disable.
+nodePorts: []
+#   - name: grpc
+#     containerPort: 50051
+#     servicePort: 50051
+#     nodePort: 31051  # Strictly enforced. External edge ingress path for gRPC.
+#     protocol: TCP
+
+nodePortServiceAnnotations: {}
+
+# ==============================================================================
+# EXTRA MULTI-ROLE PODS
+# ==============================================================================
+# Add your distinct application components below.
+# Each entry will automatically create a completely separate, scalable deployment.
+components: []
+# components:
+#   static:
+#     enabled: true
+#     replicaCount: 1
+#     args: ["static"]
+#     ports:
+#       - name: static
+#         containerPort: 80
+#         servicePort: 80
+#   celery:
+#     enabled: true
+#     replicaCount: 1
+#     args: ["celery"]
+
+# --- PLATFORM CONFIGURATIONS & CREDENTIALS ---
+# Non-sensitive raw application configuration keys.
+# Automatically provisions a ConfigMap and links it if referenced in envFrom.
+configData:
+  APP_ENV: "production"
+  LOG_LEVEL: "info"
+  CACHE_TTL: "3600"
+
+# Sensitive application secrets (Passwords, API tokens).
+# These keys are automatically base64 encoded by Helm during template rendering.
+# Omit or leave empty to disable Secret generation.
+secretData: {}
+# secretData:
+#   DATABASE_PASSWORD: "changeme"
+#   API_KEY: "changeme"
+
+# Environment injection instructions for the container runtime.
+# envFrom:
+#   - configMapRef:
+#       name: '{{ include "universal.fullname" . }}-config'
+#   - secretRef:
+#       name: '{{ include "universal.fullname" . }}-secret'
+
+# Manual raw environment variable overrides if you aren't grouping them into maps/secrets
+env: []
+# - name: CUSTOM_VAR
+#   value: "custom-value"
+
+# --- STORAGE VOLUMES & MOUNTS ---
+# Map standard Kubernetes volume configurations (PVCs, ConfigMaps, Secrets, emptyDirs)
+volumes: []
+# volumes:
+#   - name: app-config-volume
+#     configMap:
+#       name: '{{ include "universal.fullname" . }}-config'
+
+volumeMounts: []
+# volumeMounts:
+#   - name: app-config-volume
+#     mountPath: /etc/app/config
+#     readOnly: true
+
+ingress:
+  enabled: false
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts:
+    - host: app.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+          portName: http 
+  tls:
+    - secretName: app-tls-cert
+      hosts:
+        - app.example.com
+
+livenessProbe: {}
+#   httpGet:
+#     path: /healthz
+#     port: http
+#   initialDelaySeconds: 15
+#   periodSeconds: 20
+
+readinessProbe: {}
+#   httpGet:
+#     path: /ready
+#     port: http
+#   initialDelaySeconds: 5
+#   periodSeconds: 10
+
+resources: {}
+#   limits:
+#     cpu: 1000m
+#     memory: 1024Mi
+#   requests:
+#     cpu: 200m
+#     memory: 256Mi
+# 

@@ -1,0 +1,14 @@
+apiVersion: v2
+appVersion: 1.0.0
+description: A highly adaptable, universal Helm chart for deploying a single application
+  container.
+home: https://github.com/almaops
+keywords:
+- universal
+- generic
+maintainers:
+- email: val@almaops.com
+  name: Valentin Gostev
+name: universal
+type: application
+version: 1.0.1

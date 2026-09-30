@@ -1,0 +1,24 @@
+{{- if .Values.nodePorts }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "universal.fullname" . }}-external
+  labels:
+    {{- include "universal.labels" . | nindent 4 }}
+  {{- with .Values.nodePortServiceAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: NodePort
+  selector:
+    {{- include "universal.selectorLabels" . | nindent 4 }}
+  ports:
+    {{- range .Values.nodePorts }}
+    - name: {{ .name }}
+      port: {{ .servicePort | default .containerPort }}
+      targetPort: {{ .name }}
+      protocol: {{ .protocol | default "TCP" }}
+      nodePort: {{ .nodePort }}  # Hard enforced: Chart installation fails if this port is taken or out of range
+    {{- end }}
+{{- end }}
