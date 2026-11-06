@@ -68,6 +68,12 @@ ports: []
 service:
   annotations: {}
 
+# podAnnotations for primary/main app pod
+podAnnotations: {}
+
+# podLabels for primary/main app pod
+podLabels: {}
+
 # --- OPTION B: EXPLICIT EXTERNAL NODE PORTS ---
 # A completely separate external service object will be spun up ONLY for these items.
 # Kubernetes will NOT auto-assign random ports; if the designated nodePort is taken, 
